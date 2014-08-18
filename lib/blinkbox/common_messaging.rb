@@ -138,7 +138,12 @@ module Blinkbox
     end
 
     module JsonSchemaPowered
+      extend Forwardable
+      def_delegators :@data, :responds_to?, :to_json
 
+      def method_missing(m, *args, &block)
+        @data.send(m, *args, &block)
+      end
     end
 
     # Generates ruby classes representing blinkbox Books messages from the schema files at the
@@ -162,22 +167,13 @@ module Blinkbox
 
       const_set(class_name, Class.new {
         include JsonSchemaPowered
+        attr_reader :content_type
         @@schema_file = path
-
-        extend Forwardable
-        def_delegators :@data, :responds_to?, :to_json
 
         def initialize(data)
           @data = data.stringify_keys
           JSON::Validator.validate!(@@schema_file, @data, insert_defaults: true)
-        end
-
-        def content_type
-          "application/vnd.blinkbox.books." << File.basename(@@schema_file,".schema.json")
-        end
-
-        def method_missing(m, *args, &block)
-          @data.send(m, *args, &block)
+          @content_type = "application/vnd.blinkbox.books." << File.basename(@@schema_file,".schema.json")
         end
       })
     end
