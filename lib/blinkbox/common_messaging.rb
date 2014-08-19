@@ -201,10 +201,10 @@ module Blinkbox
     #
     # @example Using the root path
     #   Blinkbox::CommonMessaging.init_from_schema_at("./schema/ingestion/book/metatdata/v2.schema.json")
-    #   Blinkbox::CommonMessaging::SchemaIngestionBookMetadataV2 # exists
+    #   # => [Blinkbox::CommonMessaging::SchemaIngestionBookMetadataV2]
     #
     #   Blinkbox::CommonMessaging.init_from_schema_at("./schema/ingestion/book/metatdata/v2.schema.json", "./schema")
-    #   Blinkbox::CommonMessaging::IngestionBookMetadataV2 # exists
+    #   # => [Blinkbox::CommonMessaging::IngestionBookMetadataV2]
     # 
     # @params [String] path The path to a (or a folder of) json-schema file(s) in the blinkbox Books format.
     # @params [String] root The root path from which namespaces will be calculated. 
