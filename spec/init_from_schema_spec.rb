@@ -3,11 +3,12 @@ require "fileutils"
 require "json"
 
 context Blinkbox::CommonMessaging do
-
   describe "#init_from_schema_at" do
     subject(:klass) {
       @dir = Dir.mktmpdir
-      open(File.join(@dir, "example.v1.schema.json"),"w") do |f|
+      path = File.join(@dir,"namespace/to/example")
+      FileUtils.mkdir_p(path)
+      open(File.join(path, "v1.schema.json"),"w") do |f|
         schema = {
           title: "A basic JSON schema file for tests",
           type: "object",
@@ -38,7 +39,7 @@ context Blinkbox::CommonMessaging do
     end
 
     it "must create classes for every json schema file in a folder" do
-      expect(klass).to eql(Blinkbox::CommonMessaging::ExampleV1)
+      expect(klass).to eql(Blinkbox::CommonMessaging::NamespaceToExampleV1)
       expect(klass.included_modules).to include(Blinkbox::CommonMessaging::JsonSchemaPowered)
     end
 
@@ -107,7 +108,7 @@ context Blinkbox::CommonMessaging do
         }
         instance = klass.new(data)
 
-        expect(instance.content_type).to eq("application/vnd.blinkbox.books.example.v1")
+        expect(instance.content_type).to eq("application/vnd.blinkbox.books.namespace.to.example.v1")
       end
 
       it "must render to json as the source hash" do

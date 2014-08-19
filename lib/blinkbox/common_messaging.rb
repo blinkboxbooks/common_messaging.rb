@@ -20,6 +20,8 @@ module Blinkbox
       bunny: {
         host: "localhost",
         port: 5672,
+        user: "guest",
+        pass: "guest",
         vhost: "",
         log_level: Logger::WARN,
         automatically_recover: true,
@@ -91,7 +93,8 @@ module Blinkbox
     # @return [Bunny::Session]
     def self.connection
       @@connections ||= {}
-      @@connections[config] ||= Bunny.new(config[:bunny])
+      p config[:bunny]
+      @@connections[config] ||= Bunny.new#(config[:bunny])
       @@connections[config].start
       @@connections[config]
     end
@@ -134,7 +137,45 @@ module Blinkbox
     end
 
     class Exchange
+      # TODO: do forwarding
 
+      # A wrapped class for Bunny::Exchange. Wrapped so we can take care of message validation and header 
+      # conventions in the blinkbox Books format.
+      #
+      # @param [String] exchange_name The name of the Exchange to connect to.
+      def initialize(exchange_name)
+        connection = CommonMessaging.connection
+        channel = connection.create_channel
+        @exchange = channel.headers(
+          exchange_name,
+          durable: true,
+          auto_delete: false
+        )
+      end
+
+      def publish(data, mandatory: true, source_correlation_id: nil, headers: {})
+        raise ArgumentError, "All published messages must be validated. Please see Blinkbox::CommonMessaging.init_from_schema_at for details." unless data.class.included_modules.include?(JsonSchemaPowered)
+
+        correlation_id = generate_correlation_id(source_correlation_id)
+        @exchange.publish(
+          data.to_json,
+          persistent: true,
+          mandatory: mandatory,
+          content_type: data.content_type,
+          correlation_id: correlation_id,
+          app_id: @facility,
+          timestamp: Time.now.to_i,
+          arguments: headers
+        )
+
+        correlation_id
+      end
+
+      private
+
+      def generate_correlation_id(source_correlation_id = nil)
+        [source_correlation_id, "TODO: Generate some reasonably unique ID"].compact.join(";")
+      end
     end
 
     module JsonSchemaPowered
@@ -144,36 +185,53 @@ module Blinkbox
       def method_missing(m, *args, &block)
         @data.send(m, *args, &block)
       end
+
+      def to_hash
+        @data
+      end
     end
 
     # Generates ruby classes representing blinkbox Books messages from the schema files at the
     # given path.
     #
     # @example Initialising CommonMessaging for sending
-    #   Blinkbox::CommonMessaging.init_from_schema_at("./schema/ingestion.book.metatdata.v2.schema.json")
+    #   Blinkbox::CommonMessaging.init_from_schema_at("ingestion.book.metatdata.v2.schema.json")
     #   msg = Blinkbox::CommonMessaging::IngestionBookMetadataV2.new(title: "A title")
     #   exchange.publish(msg)
+    #
+    # @example Using the root path
+    #   Blinkbox::CommonMessaging.init_from_schema_at("./schema/ingestion/book/metatdata/v2.schema.json")
+    #   Blinkbox::CommonMessaging::SchemaIngestionBookMetadataV2 # exists
+    #
+    #   Blinkbox::CommonMessaging.init_from_schema_at("./schema/ingestion/book/metatdata/v2.schema.json", "./schema")
+    #   Blinkbox::CommonMessaging::IngestionBookMetadataV2 # exists
     # 
     # @params [String] path The path to a (or a folder of) json-schema file(s) in the blinkbox Books format.
+    # @params [String] root The root path from which namespaces will be calculated. 
     # @return Array of class names generated
-    def self.init_from_schema_at(path)
+    def self.init_from_schema_at(path, root = path)
       raise RuntimeError, "The path #{path} does not exist" unless File.exists?(path)
-      return Dir[File.join(path,"*.schema.json")].map { |file| init_from_schema_at(file) }.flatten if File.directory?(path)
+      return Dir[File.join(path, "**/*.schema.json")].map { |file| init_from_schema_at(file, root) }.flatten if File.directory?(path)
 
-      schema_name = File.basename(path, ".schema.json")
+      root = File.dirname(root) if root =~ /\.schema\.json$/
+      schema_name = path.sub(%r{^(?:\./)?#{root}/?(.+)\.schema\.json$},"\\1").tr("/",".")
       class_name = schema_name.tr(".", "_").camelcase
 
+      # We will re-declare these classes if required, rather than raise an error.
       remove_const(class_name) if constants.include?(class_name.to_sym)
 
       const_set(class_name, Class.new {
         include JsonSchemaPowered
-        attr_reader :content_type
         @@schema_file = path
+        @@content_type = "application/vnd.blinkbox.books." << schema_name
 
         def initialize(data)
           @data = data.stringify_keys
           JSON::Validator.validate!(@@schema_file, @data, insert_defaults: true)
-          @content_type = "application/vnd.blinkbox.books." << File.basename(@@schema_file,".schema.json")
+        end
+
+        def content_type
+          @@content_type
         end
       })
     end
