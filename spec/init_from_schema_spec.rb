@@ -108,7 +108,7 @@ context Blinkbox::CommonMessaging do
         }
         instance = klass.new(data)
 
-        expect(instance.content_type).to eq("application/vnd.blinkbox.books.namespace.to.example.v1")
+        expect(instance.content_type).to eq("application/vnd.blinkbox.books.namespace.to.example.v1+json")
       end
 
       it "must render to json as the source hash" do

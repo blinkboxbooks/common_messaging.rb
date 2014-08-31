@@ -2,7 +2,7 @@
 $LOAD_PATH.unshift(File.join(__dir__, "lib"))
 
 Gem::Specification.new do |gem|
-  gem.name          = "blinkbox-messaging"
+  gem.name          = "blinkbox-common_messaging"
   gem.version       = open("./VERSION").read rescue "0.0.0"
   gem.authors       = ["JP Hastings-Spital"]
   gem.email         = ["jphastings@blinkbox.com"]
@@ -16,7 +16,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
 
   gem.add_dependency "bunny", "~>1.4"
-  gem.add_dependency "active_support"
+  gem.add_dependency "activesupport"
   gem.add_dependency "ruby-units", "~>1.4"
   gem.add_dependency "json-schema"
 
