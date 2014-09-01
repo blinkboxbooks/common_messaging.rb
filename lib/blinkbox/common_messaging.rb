@@ -195,6 +195,7 @@ module Blinkbox
       # @param [Hash] headers A hash of string keys and string values which will be sent as headers with the message. Used for matching.
       # @param [String] message_id_chain Optional. The message_id_chain of the message which was received in order to prompt this one.
       # @param [Boolean] mandatory Defines whether the message will be returned if it was not routed.
+      # block called after publish requiest, before publish certain
       # @return [String] The correlation_id of the message which was delivered.
       def publish(data, headers: {}, message_id_chain: nil, mandatory: true, &block)
         raise ArgumentError, "All published messages must be validated. Please see Blinkbox::CommonMessaging.init_from_schema_at for details." unless data.class.included_modules.include?(JsonSchemaPowered)
@@ -217,6 +218,8 @@ module Blinkbox
             "message_id_chain" => message_id_chain.join(";")
           }.merge(headers)
         )
+
+        block.call(correlation_id) if block_given?
 
         correlation_id
       end
