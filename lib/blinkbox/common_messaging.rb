@@ -239,6 +239,13 @@ module Blinkbox
       def to_hash
         @data
       end
+
+      def to_s
+        classification_string = @data["classification"].map { |cl| 
+          "#{cl["realm"]}:#{cl["id"]}"
+        }.join(", ")
+        "<#{self.class.name.split("::").last}: #{classification_string}>"
+      end
     end
 
     # Generates ruby classes representing blinkbox Books messages from the schema files at the
