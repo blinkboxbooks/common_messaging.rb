@@ -80,7 +80,7 @@ context Blinkbox::CommonMessaging do
         data = {
           optionalField: "not an integer"
         }
-        expect { klass.new(data) }.to raise_error
+        expect { klass.new(data) }.to raise_error(JSON::Schema::ValidationError)
       end
 
       it "must respond with values when using #[]" do

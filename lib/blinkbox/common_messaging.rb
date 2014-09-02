@@ -83,6 +83,7 @@ module Blinkbox
     # @param [] logger The object to which log messages should be sent.
     def self.logger=(logger)
       # TODO
+      warn "Setting the logger here isn't implemented yet."
     end
 
     # Returns (and starts if necessary) the connection to the RabbitMQ server as specified by the current

@@ -1,5 +1,4 @@
 # -*- encoding: utf-8 -*-
-$LOAD_PATH.unshift(File.join(__dir__, "lib"))
 
 Gem::Specification.new do |gem|
   gem.name          = "blinkbox-common_messaging"
