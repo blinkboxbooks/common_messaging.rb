@@ -326,7 +326,7 @@ module Blinkbox
     end
 
     def self.class_name_from_schema_name(schema_name)
-      schema_name.tr(".", "_").camelcase
+      schema_name.tr("./", "_").camelcase
     end
   end
 end

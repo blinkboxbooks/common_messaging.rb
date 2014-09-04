@@ -248,7 +248,9 @@ context Blinkbox::CommonMessaging do
     end
   end
 
-  describe "#class_name_from_scheme_name" do
-
+  describe "#class_name_from_schema_name" do
+    it "must camelcase schema names correctly" do
+      expect(described_class.class_name_from_schema_name("one/two/three.four")).to eq("OneTwoThreeFour")
+    end
   end
 end
