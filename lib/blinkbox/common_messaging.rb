@@ -146,6 +146,7 @@ module Blinkbox
           durable: true,
           auto_delete: false
         )
+        Kernel.warn "No bindings were given, the queue is unlikely to receive any messages" if bindings.empty?
         bindings.each do |binding|
           @queue.bind(@exchange, arguments: binding)
         end
