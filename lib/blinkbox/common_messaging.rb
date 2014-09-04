@@ -54,21 +54,34 @@ module Blinkbox
     # @params config [Unit] :maxRetryInterval The maximum interval at which RabbitMQ reconnection attempts should back off to.
     # params [] logger The logger instance which should be used by Bunny
     def self.configure(config, logger = nil)
-      # TODO: retry intervals
-      uri = URI.parse(config[:url])
-      @@config = DEFAULT_CONFIG.deep_merge({
-        bunny: {
-          host: uri.host,
-          port: uri.port,
-          user: uri.user,
-          pass: uri.password,
-          vhost: uri.path
-        },
-        retry_interval: {
-          initial: config[:initialRetryInterval],
-          max: config[:maxRetryInterval]
-        }
-      })
+      @@config = DEFAULT_CONFIG
+
+      unless config[:url].nil?
+        uri = URI.parse(config[:url])
+        @@config.deep_merge!({
+          bunny: {
+            host: uri.host,
+            port: uri.port,
+            user: uri.user,
+            pass: uri.password,
+            vhost: uri.path
+          }
+        })
+      end
+
+      %i{initialRetryInterval maxRetryInterval}.each do |unit_key|
+        if config[unit_key]
+          config[unit_key] = Unit(config[unit_key]) unless config[unit_key].is_a?(Unit)
+
+          @@config.deep_merge!({
+            retry_interval: {
+              unit_key.to_s.sub('RetryInterval','').to_sym => config[unit_key]
+            }
+          })
+        end
+      end
+
+      self.logger = logger unless logger.nil?
     end
 
     # Returns the current config being used (as used by Bunny)
@@ -82,8 +95,10 @@ module Blinkbox
     #
     # @param [] logger The object to which log messages should be sent.
     def self.logger=(logger)
-      # TODO
-      warn "Setting the logger here isn't implemented yet."
+      %i{debug info warn error fatal level= level}.each do |m|
+        raise ArgumentError, "The logger did not respond to '#{m}'" unless logger.respond_to?(m)
+      end
+      @@config[:logger] = logger
     end
 
     # Returns (and starts if necessary) the connection to the RabbitMQ server as specified by the current
@@ -95,7 +110,7 @@ module Blinkbox
     # @return [Bunny::Session]
     def self.connection
       @@connections ||= {}
-      @@connections[config] ||= Bunny.new#(config[:bunny])
+      @@connections[config] ||= Bunny.new(config[:bunny])
       @@connections[config].start
       @@connections[config]
     end
@@ -294,10 +309,10 @@ module Blinkbox
         end
       })
 
-      const_get(class_name).const_set('CONTENT_TYPE', "application/vnd.blinkbox.books.#{schema_name}+json")
-      const_get(class_name).const_set('SCHEMA_FILE', path)
-
-      const_get(class_name)
+      klass = const_get(class_name)
+      klass.const_set('CONTENT_TYPE', "application/vnd.blinkbox.books.#{schema_name}+json")
+      klass.const_set('SCHEMA_FILE', path)
+      klass
     end
 
     def self.class_from_content_type(content_type)
