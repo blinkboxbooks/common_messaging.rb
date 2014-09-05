@@ -7,6 +7,7 @@ require "ruby_units"
 require "forwardable"
 require "json-schema"
 require "securerandom"
+require "logger"
 
 module Blinkbox
   # A group of methods and classes which enable the delivery of messages through the
@@ -32,7 +33,8 @@ module Blinkbox
       retry_interval: {
         initial: Unit("5 seconds"),
         max: Unit("5 seconds")
-      }
+      },
+      logger: Logger.new(nil)
     }
 
     # This method only stores connection details for calls to `CommonMessaging::Queue.new`.
@@ -132,6 +134,7 @@ module Blinkbox
       # @return [Bunny::Queue] A blinkbox managed Bunny Queue object
       def initialize(queue_name, exchange: "amq.headers", bindings: [])
         connection = CommonMessaging.connection
+        @logger = CommonMessaging.config[:logger]
         # We create one channel per queue because it means that any issues are isolated
         # and we can start a new channel and resume efforts in a segregated manner.
         @channel = connection.create_channel
@@ -172,9 +175,7 @@ module Blinkbox
               raise "Unknown response from subscribe block: #{response}"
             end
           rescue Exception => e
-            # TODO: reject - using logs
-            $stderr.puts e.message
-            $stderr.puts e.backtrace.join("\n")
+            @logger.error e
             @channel.reject(delivery_info[:delivery_tag])
           end
         }

@@ -22,9 +22,9 @@ context Blinkbox::CommonMessaging::Queue do
 
     it "must create a new queue of the given name" do
       queue_name = "testing"
-      queue = Blinkbox::CommonMessaging::Queue.new(queue_name)
+      queue = described_class.new(queue_name)
 
-      expect(queue).to be_a(Blinkbox::CommonMessaging::Queue)
+      expect(queue).to be_a(described_class)
       expect(@doubles[:connection]).to have_received(:queue).with(queue_name, {durable: true, auto_delete: false, exclusive: false})
     end
 
@@ -40,12 +40,25 @@ context Blinkbox::CommonMessaging::Queue do
 
     it "should raise a warning if no bindings are given" do
       allow(Kernel).to receive(:warn)
-      Blinkbox::CommonMessaging::Queue.new("fizz", exchange: "buzz", bindings: [])
+      described_class.new("fizz", exchange: "buzz", bindings: [])
       expect(Kernel).to have_received(:warn)
     end
   end
 
   describe ".subscribe" do
+    it "must subscribe to the queue and yield metadata and the object" do
+      queue = double(described_class.allocate)
+      allow(queue).to receive(:subscribe)
 
+      fail
+      message_handler = Proc.new { |a, b|
+        p a
+        p b
+      }
+
+      queue.subscribe(block: false, &message_handler)
+
+
+    end
   end
 end
