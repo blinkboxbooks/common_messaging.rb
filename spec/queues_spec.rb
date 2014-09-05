@@ -16,10 +16,6 @@ context Blinkbox::CommonMessaging::Queue do
       )
     end
 
-    after :each do 
-      Blinkbox::CommonMessaging.class_variable_set(:'@@connections', {})
-    end
-
     it "must create a new queue of the given name" do
       queue_name = "testing"
       queue = described_class.new(queue_name)
@@ -56,9 +52,7 @@ context Blinkbox::CommonMessaging::Queue do
             'content-type' => @content_type
           }
         },
-        payload: {
-          requiredField: "string"
-        }.to_json
+        payload: @valid_object.to_json
       }
 
       @queue = described_class.allocate

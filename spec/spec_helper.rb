@@ -7,6 +7,10 @@ RSpec.configure do |config|
     @content_type = "application/vnd.blinkbox.books.namespace.to.example.v1+json"
     @schema_path = "namespace/to/example/v1.schema.json"
 
+    @valid_object = {
+      requiredField: "string"
+    }
+
     path = File.join(@dir, File.dirname(@schema_path))
     FileUtils.mkdir_p(path)
     open(File.join(path, File.basename(@schema_path)),"w") do |f|
@@ -37,5 +41,9 @@ RSpec.configure do |config|
 
   config.after :all do
     FileUtils.remove_entry_secure @dir
+  end
+
+  config.after :each do
+    Blinkbox::CommonMessaging.class_variable_set(:'@@connections', {})
   end
 end
