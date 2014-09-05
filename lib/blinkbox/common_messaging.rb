@@ -176,7 +176,7 @@ module Blinkbox
             end
           rescue Exception => e
             @logger.error e
-            @channel.reject(delivery_info[:delivery_tag])
+            @channel.reject(delivery_info[:delivery_tag], false)
           end
         }
       end
@@ -266,6 +266,8 @@ module Blinkbox
           "#{cl["realm"]}:#{cl["id"]}"
         }.join(", ")
         "<#{self.class.name.split("::").last}: #{classification_string}>"
+      rescue
+        @data.to_json
       end
     end
 
