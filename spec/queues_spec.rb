@@ -21,7 +21,15 @@ context Blinkbox::CommonMessaging::Queue do
       queue = described_class.new(queue_name)
 
       expect(queue).to be_a(described_class)
-      expect(@doubles[:connection]).to have_received(:queue).with(queue_name, durable: true, auto_delete: false, exclusive: false)
+      expect(@doubles[:connection]).to have_received(:queue).with(
+        queue_name,
+        durable: true,
+        auto_delete: false,
+        exclusive: false,
+        arguments: {
+          "x-dead-letter-exchange" => anything
+        }
+      )
     end
 
     it "must bind the queue to the given exchange with each of the given binding headers" do
@@ -30,6 +38,7 @@ context Blinkbox::CommonMessaging::Queue do
       Blinkbox::CommonMessaging::Queue.new("whatever", exchange: exchange_name, bindings: bindings)
 
       bindings.each do |binding|
+        binding["x-dead-letter-exchange"] = "#{exchange_name}.DLX"
         expect(@doubles[:queue]).to have_received(:bind).with(@doubles[:exchange], arguments: binding)
       end
     end
@@ -125,15 +134,20 @@ context Blinkbox::CommonMessaging::Queue do
       expect(@bunny_channel).to have_received(:reject).with(@dummy_data[:delivery_info][:delivery_tag], false)
     end
 
-    it "must reject without retrying (ie. DLQ) the message and log an error when the passed block raises an exception" do
+    it "must call the `on_exception` method for messages that raise an exception in the passed block" do
       exception = Exception.new("An error of any variety that inherrits from Exception")
       message_handler = proc { |_metadata, _message_object|
         raise exception
       }
+      on_exception = proc do |e, channel, delivery_info, metadata, payload|
+        expect(e).to eql(exception)
+        expect(channel).to be_a(Bunny::Connection)
+        expect(delivery_info).to eq(@dummy_data[:delivery_info])
+        expect(metadata).to eq(@dummy_data[:metadata])
+        expect(payload).to eq(@dummy_data[:payload])
+      end
 
       @queue.subscribe(block: false, &message_handler)
-      expect(@bunny_channel).to have_received(:reject).with(@dummy_data[:delivery_info][:delivery_tag], false)
-      expect(@logger).to have_received(:error).with(exception)
     end
   end
 end
