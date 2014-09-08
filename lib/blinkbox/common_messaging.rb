@@ -162,6 +162,14 @@ module Blinkbox
       # * Returning `false` or `:reject` from the block will send the message to the DLQ
       # * Returning `:retry` will put the message back on the queue to be tried again later.
       #
+      # @example Subscribing to messages
+      #   queue = Blinkbox::CommonMessaging::Queue.new("catch-all", exchange_name: "Marvin", [{}])
+      #   queue.subscribe(block:true) do |metadata, obj|
+      #     puts "Messge received."
+      #     puts "Headers: #{metadata[:headers].to_json}"
+      #     puts "Body: #{obj.to_json}"
+      #   end
+      #
       # @param [Hash] options Options sent to Bunny's subscribe method
       # @option options [Boolean] :block Should this method block while being executed (true, default) or spawn a new thread? (false)
       # @yield [metadata, payload_object] A block to execute for each message which is received on this queue.
