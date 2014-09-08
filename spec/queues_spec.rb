@@ -21,7 +21,7 @@ context Blinkbox::CommonMessaging::Queue do
       queue = described_class.new(queue_name)
 
       expect(queue).to be_a(described_class)
-      expect(@doubles[:connection]).to have_received(:queue).with(queue_name, {durable: true, auto_delete: false, exclusive: false})
+      expect(@doubles[:connection]).to have_received(:queue).with(queue_name, durable: true, auto_delete: false, exclusive: false)
     end
 
     it "must bind the queue to the given exchange with each of the given binding headers" do
@@ -71,7 +71,7 @@ context Blinkbox::CommonMessaging::Queue do
     end
 
     it "must subscribe to the queue and yield metadata and the message object" do
-      message_handler = Proc.new { |metadata, message_object|
+      message_handler = proc { |metadata, message_object|
         expect(metadata).to eq(@dummy_data[:metadata])
         expect(message_object).to be_a(@klass)
         :ack
@@ -81,7 +81,7 @@ context Blinkbox::CommonMessaging::Queue do
     end
 
     it "must acknowledge the message when the passed block returns :ack" do
-      message_handler = Proc.new { |metadata, message_object|
+      message_handler = proc { |_metadata, _message_object|
         :ack
       }
 
@@ -90,7 +90,7 @@ context Blinkbox::CommonMessaging::Queue do
     end
 
     it "must acknowledge the message when the passed block returns true" do
-      message_handler = Proc.new { |metadata, message_object|
+      message_handler = proc { |_metadata, _message_object|
         true
       }
 
@@ -99,7 +99,7 @@ context Blinkbox::CommonMessaging::Queue do
     end
 
     it "must reject & request the message delivery be retried when the passed block returns :retry" do
-      message_handler = Proc.new { |metadata, message_object|
+      message_handler = proc { |_metadata, _message_object|
         :retry
       }
 
@@ -108,7 +108,7 @@ context Blinkbox::CommonMessaging::Queue do
     end
 
     it "must reject without retrying (ie. DLQ) the message when the passed block returns :reject" do
-      message_handler = Proc.new { |metadata, message_object|
+      message_handler = proc { |_metadata, _message_object|
         :reject
       }
 
@@ -117,7 +117,7 @@ context Blinkbox::CommonMessaging::Queue do
     end
 
     it "must reject without retrying (ie. DLQ) the message when the passed block returns false" do
-      message_handler = Proc.new { |metadata, message_object|
+      message_handler = proc { |_metadata, _message_object|
         false
       }
 
@@ -127,7 +127,7 @@ context Blinkbox::CommonMessaging::Queue do
 
     it "must reject without retrying (ie. DLQ) the message and log an error when the passed block raises an exception" do
       exception = Exception.new("An error of any variety that inherrits from Exception")
-      message_handler = Proc.new { |metadata, message_object|
+      message_handler = proc { |_metadata, _message_object|
         raise exception
       }
 

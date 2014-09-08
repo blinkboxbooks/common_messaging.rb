@@ -18,7 +18,7 @@ context Blinkbox::CommonMessaging::Exchange do
       exchange = described_class.new(exchange_name)
 
       expect(exchange).to be_a(described_class)
-      expect(@doubles[:connection]).to have_received(:headers).with(exchange_name, { durable: true, auto_delete: false })
+      expect(@doubles[:connection]).to have_received(:headers).with(exchange_name, durable: true, auto_delete: false)
     end
 
     it "must set the @app_id variable" do
@@ -101,7 +101,7 @@ context Blinkbox::CommonMessaging::Exchange do
     end
 
     it "must pass on the message_id_chain, appending the generated message_id" do
-      message_id_chain = ["1","2"]
+      message_id_chain = %w{123 456}
 
       message_id = @exchange.publish(@object, message_id_chain: message_id_chain.dup)
       expect(@real_exchange).to have_received(:publish).with(
@@ -125,9 +125,9 @@ context Blinkbox::CommonMessaging::Exchange do
     end
 
     it "must set the correlation_id to be the first message_id if a message chain is passed" do
-      message_id_chain = ["1","2"]
+      message_id_chain = %w{123 456}
 
-      message_id = @exchange.publish(@object, message_id_chain: message_id_chain)
+      @exchange.publish(@object, message_id_chain: message_id_chain)
       expect(@real_exchange).to have_received(:publish).with(
         anything,
         hash_including(

@@ -13,7 +13,7 @@ RSpec.configure do |config|
 
     path = File.join(@dir, File.dirname(@schema_path))
     FileUtils.mkdir_p(path)
-    open(File.join(path, File.basename(@schema_path)),"w") do |f|
+    open(File.join(path, File.basename(@schema_path)), "w") do |f|
       schema = {
         title: "A basic JSON schema file for tests",
         type: "object",

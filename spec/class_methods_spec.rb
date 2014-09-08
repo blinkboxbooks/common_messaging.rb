@@ -104,7 +104,7 @@ context Blinkbox::CommonMessaging do
       end
 
       it "must return a runtime error if the specified content type has not been 'init'ed" do
-        expect{
+        expect {
           described_class.class_from_content_type("application/vnd.not.an.inited.type")
         }.to raise_error(RuntimeError), "The content type given wasn't initialised, no class should be returned"
       end
@@ -114,9 +114,7 @@ context Blinkbox::CommonMessaging do
   describe "#configure" do
     it "must update the bunny host, port, user, pass and vhost from delivered hash" do
       uri = URI("amqp://user:pass@host:12345/vhost")
-      described_class.configure({
-        url: uri.to_s
-      })
+      described_class.configure(url: uri.to_s)
 
       config = described_class.class_variable_get(:'@@config')
       expect(config[:bunny][:host]).to eq(uri.host)
@@ -130,10 +128,10 @@ context Blinkbox::CommonMessaging do
       initial = Unit("1.5 s")
       max = Unit("2.5 s")
 
-      described_class.configure({
+      described_class.configure(
         initialRetryInterval: initial,
         maxRetryInterval: max
-      })
+      )
 
       config = described_class.class_variable_get(:'@@config')
       expect(config[:retry_interval][:initial]).to eq(initial)
@@ -147,9 +145,7 @@ context Blinkbox::CommonMessaging do
     end
 
     it "must return the config if a call to #configure has been made" do
-      described_class.configure({
-        url: "amqp://user:pass@host:12345/vhost"
-      })
+      described_class.configure(url: "amqp://user:pass@host:12345/vhost")
 
       expect(described_class.config).to eql(described_class.class_variable_get(:'@@config'))
     end
@@ -169,7 +165,7 @@ context Blinkbox::CommonMessaging do
     end
 
     it "must set the class logger" do
-      logger = FakeLogger.new()
+      logger = FakeLogger.new
       described_class.logger = logger
       expect(described_class.class_variable_get(:'@@config')[:logger]).to eq(logger)
     end

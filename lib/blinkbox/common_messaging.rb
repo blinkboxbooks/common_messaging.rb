@@ -60,7 +60,7 @@ module Blinkbox
 
       unless config[:url].nil?
         uri = URI.parse(config[:url])
-        @@config.deep_merge!({
+        @@config.deep_merge!(
           bunny: {
             host: uri.host,
             port: uri.port,
@@ -68,18 +68,18 @@ module Blinkbox
             pass: uri.password,
             vhost: uri.path
           }
-        })
+        )
       end
 
       %i{initialRetryInterval maxRetryInterval}.each do |unit_key|
         if config[unit_key]
           config[unit_key] = Unit(config[unit_key]) unless config[unit_key].is_a?(Unit)
 
-          @@config.deep_merge!({
+          @@config.deep_merge!(
             retry_interval: {
-              unit_key.to_s.sub('RetryInterval','').to_sym => config[unit_key]
+              unit_key.to_s.sub('RetryInterval', '').to_sym => config[unit_key]
             }
-          })
+          )
         end
       end
 
@@ -155,11 +155,13 @@ module Blinkbox
         end
       end
 
-      def subscribe(options = {}, &block)
+      # TODO: Document this!
+      def subscribe(options = {})
+        raise ArgumentError, "Please give a block to run when a message is received" unless block_given?
         @queue.subscribe(
           block: options[:block] || true,
           manual_ack: true
-        ) { |delivery_info, metadata, payload|
+        ) do |delivery_info, metadata, payload|
           begin
             klass = Blinkbox::CommonMessaging.class_from_content_type(metadata[:headers]['content-type'])
             object = klass.new(JSON.parse(payload))
@@ -172,13 +174,13 @@ module Blinkbox
             when :retry
               @channel.reject(delivery_info[:delivery_tag], true)
             else
-              raise "Unknown response from subscribe block: #{response}"
+              fail "Unknown response from subscribe block: #{response}"
             end
           rescue Exception => e
             @logger.error e
             @channel.reject(delivery_info[:delivery_tag], false)
           end
-        }
+        end
       end
     end
 
@@ -192,7 +194,7 @@ module Blinkbox
       # @param [String] exchange_name The name of the Exchange to connect to.
       # @param [String] facility The name of the app or service (we've adopted the GELF naming term across ruby)
       # @param [String] facility_version The version of the app or service which sent the message.
-      def initialize(exchange_name, facility: File.basename($0,'.rb'), facility_version: "0.0.0-unknown")
+      def initialize(exchange_name, facility: File.basename($0, '.rb'), facility_version: "0.0.0-unknown")
         @app_id = "#{facility}:v#{facility_version}"
         connection = CommonMessaging.connection
         channel = connection.create_channel
@@ -259,9 +261,9 @@ module Blinkbox
       end
 
       def to_s
-        classification_string = @data["classification"].map { |cl| 
+        classification_string = @data["classification"].map do |cl| 
           "#{cl["realm"]}:#{cl["id"]}"
-        }.join(", ")
+        end.join(", ")
         "<#{self.class.name.split("::").last}: #{classification_string}>"
       rescue
         @data.to_json
@@ -287,11 +289,11 @@ module Blinkbox
     # @params [String] root The root path from which namespaces will be calculated. 
     # @return Array of class names generated
     def self.init_from_schema_at(path, root = path)
-      raise RuntimeError, "The path #{path} does not exist" unless File.exists?(path)
+      fail "The path #{path} does not exist" unless File.exist?(path)
       return Dir[File.join(path, "**/*.schema.json")].map { |file| init_from_schema_at(file, root) }.flatten if File.directory?(path)
 
       root = File.dirname(root) if root =~ /\.schema\.json$/
-      schema_name = path.sub(%r{^(?:\./)?#{root}/?(.+)\.schema\.json$},"\\1").tr("/",".")
+      schema_name = path.sub(%r{^(?:\./)?#{root}/?(.+)\.schema\.json$}, "\\1").tr("/",".")
       class_name = class_name_from_schema_name(schema_name)
 
       # We will re-declare these classes if required, rather than raise an error.
@@ -317,7 +319,7 @@ module Blinkbox
     end
 
     def self.class_from_content_type(content_type)
-      raise "No content type was given" if content_type.nil? || content_type.empty?
+      fail "No content type was given" if content_type.nil? || content_type.empty?
       begin
         schema_name = content_type.sub(%r{^application/vnd\.blinkbox\.books\.(.+)\+json$}, '\1')
         const_get(class_name_from_schema_name(schema_name))
