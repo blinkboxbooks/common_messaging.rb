@@ -12,7 +12,7 @@ context Blinkbox::CommonMessaging::Queue do
       allow(@doubles[:queue]).to receive(:bind)
 
       allow(Bunny).to receive(:new).and_return(
-        double(Bunny::Session, create_channel: @doubles[:connection], start: nil, confirm_select: nil)
+        double(Bunny::Session, create_channel: @doubles[:connection], start: nil)
       )
     end
 

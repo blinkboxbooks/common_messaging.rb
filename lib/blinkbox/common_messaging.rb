@@ -113,7 +113,6 @@ module Blinkbox
     def self.connection
       @@connections ||= {}
       @@connections[config] ||= Bunny.new(config[:bunny])
-      @@connections[config].confirm_select
       @@connections[config].start
       @@connections[config]
     end
@@ -272,6 +271,7 @@ module Blinkbox
         @app_id = "#{facility}:v#{facility_version}"
         connection = CommonMessaging.connection
         channel = connection.create_channel
+        channel.confirm_select
         @exchange = channel.headers(
           exchange_name,
           durable: true,

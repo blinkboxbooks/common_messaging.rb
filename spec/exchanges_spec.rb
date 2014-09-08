@@ -2,15 +2,17 @@ context Blinkbox::CommonMessaging::Exchange do
   describe "#initialize" do
     before :each do
       @doubles = {
-        connection: double(Bunny::Channel),
+        connection: double(Bunny::Session),
+        channel: double(Bunny::Channel),
         exchange: double(Bunny::Exchange)
       }
 
-      allow(@doubles[:connection]).to receive(:headers).and_return(@doubles[:exchange])
+      allow(@doubles[:channel]).to receive(:headers).and_return(@doubles[:exchange])
+      allow(@doubles[:channel]).to receive(:confirm_select)
+      allow(@doubles[:connection]).to receive(:create_channel).and_return(@doubles[:channel])
+      allow(@doubles[:connection]).to receive(:start)
 
-      allow(Bunny).to receive(:new).and_return(
-        double(Bunny::Session, create_channel: @doubles[:connection], start: nil, confirm_select: nil)
-      )
+      allow(Bunny).to receive(:new).and_return(@doubles[:connection])
     end
 
     it "must create a new headers exchange of the given name" do
@@ -18,7 +20,7 @@ context Blinkbox::CommonMessaging::Exchange do
       exchange = described_class.new(exchange_name)
 
       expect(exchange).to be_a(described_class)
-      expect(@doubles[:connection]).to have_received(:headers).with(exchange_name, durable: true, auto_delete: false, passive: true)
+      expect(@doubles[:channel]).to have_received(:headers).with(exchange_name, durable: true, auto_delete: false, passive: true)
     end
 
     it "must set the @app_id variable" do

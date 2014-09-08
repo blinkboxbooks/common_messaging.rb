@@ -184,8 +184,8 @@ context Blinkbox::CommonMessaging do
     before :each do
       allow(Bunny).to receive(:new).and_return(
         # Return a different instance of the doube the second time around
-        double(Bunny::Session, create_channel: nil, start: nil, confirm_select: nil),
-        double(Bunny::Session, create_channel: nil, start: nil, confirm_select: nil)
+        double(Bunny::Session, create_channel: nil, start: nil),
+        double(Bunny::Session, create_channel: nil, start: nil)
       )
     end
 
