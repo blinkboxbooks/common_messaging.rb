@@ -39,14 +39,14 @@ context Blinkbox::CommonMessaging do
         data = {
           optionalField: 123
         }
-        expect { @klass.new(data) }.to raise_error
+        expect { @klass.new(data) }.to raise_error JSON::Schema::ValidationError
       end
 
       it "must not initialize if attributes are of the wrong type" do
         data = {
           optionalField: "not an integer"
         }
-        expect { @klass.new(data) }.to raise_error
+        expect { @klass.new(data) }.to raise_error JSON::Schema::ValidationError
       end
 
       it "must respond with values when using #[]" do
@@ -111,10 +111,10 @@ context Blinkbox::CommonMessaging do
     end
   end
 
-  describe "#configure" do
+  describe "#configure!" do
     it "must update the bunny host, port, user, pass and vhost from delivered hash" do
       uri = URI("amqp://user:pass@host:12345/vhost")
-      described_class.configure(url: uri.to_s)
+      described_class.configure!(url: uri.to_s)
 
       config = described_class.class_variable_get(:'@@config')
       expect(config[:bunny][:host]).to eq(uri.host)
@@ -128,7 +128,7 @@ context Blinkbox::CommonMessaging do
       initial = Unit("1.5 s")
       max = Unit("2.5 s")
 
-      described_class.configure(
+      described_class.configure!(
         initialRetryInterval: initial,
         maxRetryInterval: max
       )
@@ -140,12 +140,12 @@ context Blinkbox::CommonMessaging do
   end
 
   describe "#config" do
-    it "must return the default config if no call to #configure has been made" do
+    it "must return the default config if no call to #configure! has been made" do
       expect(described_class.config).to eql(described_class::DEFAULT_CONFIG)
     end
 
-    it "must return the config if a call to #configure has been made" do
-      described_class.configure(url: "amqp://user:pass@host:12345/vhost")
+    it "must return the config if a call to #configure! has been made" do
+      described_class.configure!(url: "amqp://user:pass@host:12345/vhost")
 
       expect(described_class.config).to eql(described_class.class_variable_get(:'@@config'))
     end
@@ -198,9 +198,9 @@ context Blinkbox::CommonMessaging do
     end
 
     it "must return a different Bunny::Connection if @@config changes" do
-      described_class.configure(url: "amqp://user:pass@first:54321/vhost")
+      described_class.configure!(url: "amqp://user:pass@first:54321/vhost")
       first_connection = described_class.connection
-      described_class.configure(url: "amqp://user:pass@second:54321/vhost")
+      described_class.configure!(url: "amqp://user:pass@second:54321/vhost")
       expect(described_class.connection).to_not eql(first_connection)
     end
   end

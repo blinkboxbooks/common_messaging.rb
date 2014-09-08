@@ -13,7 +13,7 @@ module Blinkbox
   # A group of methods and classes which enable the delivery of messages through the
   # blinkbox Books ecosystem via AMQP.
   #
-  # `CommonMessaging.configure` should be used to set up connection details first, then 
+  # `CommonMessaging.configure!` should be used to set up connection details first, then 
   # every subsequent call to `CommonMessaging::Queue.new` will create a `Bunny::Queue` object
   # using the connection details that were present at the time.
   module CommonMessaging
@@ -48,14 +48,14 @@ module Blinkbox
     #   require "blinkbox/common_messaging"
     #   
     #   config = Blinkbox::CommonConfig.new
-    #   Blinkbox::CommonMessaging.configure(config.tree(:rabbitmq))
+    #   Blinkbox::CommonMessaging.configure!(config.tree(:rabbitmq))
     #
     # @param [Hash] config The configuration options needed for an MQ connection.
     # @option config [String] :url The URL to the RabbitMQ server, eg. amqp://user:pass@host.name:1234/virtual_host
     # @option config [Unit] :initialRetryInterval The interval at which re-connection attempts should be made when a RabbitMQ failure first occurs.
     # @option config [Unit] :maxRetryInterval The maximum interval at which RabbitMQ reconnection attempts should back off to.
     # @param [#debug, #info, #warn, #error, #fatal] logger The logger instance which should be used by Bunny
-    def self.configure(config, logger = nil)
+    def self.configure!(config, logger = nil)
       @@config = DEFAULT_CONFIG
 
       unless config[:url].nil?
