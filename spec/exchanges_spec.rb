@@ -9,7 +9,7 @@ context Blinkbox::CommonMessaging::Exchange do
       allow(@doubles[:connection]).to receive(:headers).and_return(@doubles[:exchange])
 
       allow(Bunny).to receive(:new).and_return(
-        double(Bunny::Session, create_channel: @doubles[:connection], start: nil)
+        double(Bunny::Session, create_channel: @doubles[:connection], start: nil, confirm_select: nil)
       )
     end
 
@@ -34,7 +34,11 @@ context Blinkbox::CommonMessaging::Exchange do
   describe ".publish" do
     before :each do
       @real_exchange = double("exchange")
+      @real_channel = double("channel")
       allow(@real_exchange).to receive(:publish)
+      allow(@real_exchange).to receive(:channel).and_return(@real_channel)
+      allow(@real_channel).to receive(:wait_for_confirms).and_return(true)
+      allow(@real_channel).to receive(:nacked_set).and_return(Set.new(["abc123"]))
 
       @exchange = described_class.allocate
       @exchange.instance_variable_set(:'@exchange', @real_exchange)
@@ -146,24 +150,30 @@ context Blinkbox::CommonMessaging::Exchange do
       )
     end
 
-    it "must send mandatory messages by default" do
+    it "must send messages requiring publisher confirms by default" do
       @exchange.publish(@object)
-      expect(@real_exchange).to have_received(:publish).with(
-        anything,
-        hash_including(
-          mandatory: true
-        )
-      )
+      expect(@real_channel).to have_received(:wait_for_confirms)
     end
 
-    it "must allow the sending of non-mandatory messages" do
-      @exchange.publish(@object, mandatory: false)
-      expect(@real_exchange).to have_received(:publish).with(
-        anything,
-        hash_including(
-          mandatory: false
-        )
-      )
+    it "must allow messages that do not require publisher confirms" do
+      @exchange.publish(@object, confirm: false)
+      expect(@real_channel).to_not have_received(:wait_for_confirms)
+    end
+
+    it "must not raise exceptions if the message is confirmed" do
+      @exchange.publish(@object)
+      expect(@real_channel).to_not have_received(:nacked_set)
+    end
+
+    it "must raise an UndeliverableMessageError if the message is not confirmed" do
+      # Call wait_for_confirms once, and receive the 'true' which is queued up
+      @real_channel.wait_for_confirms
+      # Begin with the real test
+      allow(@real_channel).to receive(:wait_for_confirms).and_return(false)
+      expect {
+        @exchange.publish(@object)
+      }.to raise_error(Blinkbox::CommonMessaging::UndeliverableMessageError)
+      expect(@real_channel).to have_received(:nacked_set)
     end
 
     it "must set the app_id to the facility and facility_version given at instantiation" do

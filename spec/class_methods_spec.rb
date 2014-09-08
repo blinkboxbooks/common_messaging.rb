@@ -184,8 +184,8 @@ context Blinkbox::CommonMessaging do
     before :each do
       allow(Bunny).to receive(:new).and_return(
         # Return a different instance of the doube the second time around
-        double(Bunny::Session, create_channel: nil, start: nil),
-        double(Bunny::Session, create_channel: nil, start: nil)
+        double(Bunny::Session, create_channel: nil, start: nil, confirm_select: nil),
+        double(Bunny::Session, create_channel: nil, start: nil, confirm_select: nil)
       )
     end
 
@@ -202,6 +202,34 @@ context Blinkbox::CommonMessaging do
       first_connection = described_class.connection
       described_class.configure(url: "amqp://user:pass@second:54321/vhost")
       expect(described_class.connection).to_not eql(first_connection)
+    end
+  end
+
+  describe "#close_connections" do
+    it "must close all open connections" do
+      conn_1 = double("conn_1")
+      allow(conn_1).to receive(:close)
+      conn_2 = double("conn_2")
+      allow(conn_2).to receive(:close)
+      described_class.class_variable_set(:'@@connections', {'a' => conn_1, 'b' => conn_2})
+
+      described_class.close_connections(block_until_confirms: false)
+
+      expect(conn_1).to have_received(:close)
+      expect(conn_2).to have_received(:close)
+    end
+
+    it "must call the given block for any unacknowleged messages" do
+      failed_message_id = "abc123"
+      conn_1 = double("conn_1")
+      allow(conn_1).to receive(:close)
+      allow(conn_1).to receive(:wait_for_confirms).and_return(false)
+      allow(conn_1).to receive(:nacked_set).and_return([failed_message_id])
+      described_class.class_variable_set(:'@@connections', {'a' => conn_1})
+
+      described_class.close_connections do |message_id|
+        expect(message_id).to eq(failed_message_id)
+      end
     end
   end
 
