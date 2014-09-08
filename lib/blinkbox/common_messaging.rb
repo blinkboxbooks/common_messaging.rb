@@ -362,7 +362,7 @@ module Blinkbox
     end
 
     def self.class_from_content_type(content_type)
-      fail "No content type was given" if content_type.nil? || content_type.empty?
+      fail "No content type was given" if content_type.blank?
       begin
         schema_name = content_type.sub(%r{^application/vnd\.blinkbox\.books\.(.+)\+json$}, '\1')
         const_get(class_name_from_schema_name(schema_name))

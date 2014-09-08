@@ -190,7 +190,7 @@ context Blinkbox::CommonMessaging do
     end
 
     after :each do 
-      described_class.class_variable_set(:'@@connections', {})
+      described_class.remove_class_variable(:'@@connections')
     end
 
     it "must return a started Bunny::Connection" do

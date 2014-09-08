@@ -44,6 +44,6 @@ RSpec.configure do |config|
   end
 
   config.after :each do
-    Blinkbox::CommonMessaging.class_variable_set(:'@@connections', {})
+    Blinkbox::CommonMessaging.remove_class_variable(:'@@connections') if Blinkbox::CommonMessaging.class_variable_defined?(:'@@connections')
   end
 end
