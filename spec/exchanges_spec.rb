@@ -18,7 +18,7 @@ context Blinkbox::CommonMessaging::Exchange do
       exchange = described_class.new(exchange_name)
 
       expect(exchange).to be_a(described_class)
-      expect(@doubles[:connection]).to have_received(:headers).with(exchange_name, durable: true, auto_delete: false)
+      expect(@doubles[:connection]).to have_received(:headers).with(exchange_name, durable: true, auto_delete: false, passive: true)
     end
 
     it "must set the @app_id variable" do

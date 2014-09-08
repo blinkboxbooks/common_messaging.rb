@@ -168,7 +168,8 @@ module Blinkbox
         @exchange = @channel.headers(
           exchange,
           durable: true,
-          auto_delete: false
+          auto_delete: false,
+          passive: true
         )
         Kernel.warn "No bindings were given, the queue is unlikely to receive any messages" if bindings.empty?
         bindings.each do |binding|
@@ -274,7 +275,8 @@ module Blinkbox
         @exchange = channel.headers(
           exchange_name,
           durable: true,
-          auto_delete: false
+          auto_delete: false,
+          passive: true
         )
       end
 
