@@ -24,7 +24,7 @@ module Blinkbox
         port: 5672,
         user: "guest",
         pass: "guest",
-        vhost: "",
+        vhost: "/",
         log_level: Logger::WARN,
         automatically_recover: true,
         threaded: true,
@@ -112,6 +112,7 @@ module Blinkbox
     # @return [Bunny::Session]
     def self.connection
       @@connections ||= {}
+      p config[:bunny]
       @@connections[config] ||= Bunny.new(config[:bunny])
       @@connections[config].start
       @@connections[config]
@@ -148,6 +149,7 @@ module Blinkbox
       # @param [String] exchange The name of the Exchange to bind to. The default value should be avoided for production uses.
       # @param [String] dlx The name of the Dead Letter Exchange to send nacked messages to.
       # @param [Array,Hash] bindings An array of hashes, each on detailing the parameters for a new binding.
+      # @raise [Bunny::NotFound] If the exchange does not exist.
       # @return [Bunny::Queue] A blinkbox managed Bunny Queue object
       def initialize(queue_name, exchange: "amq.headers", dlx: "#{exchange}.DLX", bindings: [])
         connection = CommonMessaging.connection
@@ -267,6 +269,7 @@ module Blinkbox
       # @param [String] exchange_name The name of the Exchange to connect to.
       # @param [String] facility The name of the app or service (we've adopted the GELF naming term across ruby)
       # @param [String] facility_version The version of the app or service which sent the message.
+      # @raise [Bunny::NotFound] If the exchange does not exist.
       def initialize(exchange_name, facility: File.basename($0, '.rb'), facility_version: "0.0.0-unknown")
         @app_id = "#{facility}:v#{facility_version}"
         connection = CommonMessaging.connection
