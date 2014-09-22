@@ -112,7 +112,6 @@ module Blinkbox
     # @return [Bunny::Session]
     def self.connection
       @@connections ||= {}
-      p config[:bunny]
       @@connections[config] ||= Bunny.new(config[:bunny])
       @@connections[config].start
       @@connections[config]
