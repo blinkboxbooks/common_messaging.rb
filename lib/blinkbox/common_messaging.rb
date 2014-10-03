@@ -1,3 +1,4 @@
+require "blinkbox/common_messaging/version"
 require "bunny"
 require "uri"
 require "active_support/core_ext/hash/keys"
@@ -8,6 +9,7 @@ require "forwardable"
 require "json-schema"
 require "securerandom"
 require "logger"
+require "blinkbox/common_messaging/header_detectors"
 
 module Blinkbox
   # A group of methods and classes which enable the delivery of messages through the
@@ -300,6 +302,8 @@ module Blinkbox
         message_id_chain = (message_id_chain || []) << message_id
         correlation_id = message_id_chain.first
 
+        hd = Blinkbox::CommonMessaging::HeaderDetectors.new(data)
+
         @exchange.publish(
           data.to_json,
           persistent: true,
@@ -308,10 +312,10 @@ module Blinkbox
           message_id: message_id,
           app_id: @app_id,
           timestamp: Time.now.to_i,
-          headers: {
+          headers: hd.modified_headers({
             "content-type" => data.content_type,
             "message_id_chain" => message_id_chain
-          }.merge(headers)
+          }.merge(headers))
         )
 
         if confirm && !@exchange.channel.wait_for_confirms
