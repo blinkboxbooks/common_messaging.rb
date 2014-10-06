@@ -300,8 +300,8 @@ module Blinkbox
         raise ArgumentError, "message_id_chain must be an array of strings" unless message_id_chain.is_a?(Array)
 
         message_id = generate_message_id
-        message_id_chain = message_id_chain.dup << message_id
-        correlation_id = message_id_chain.first
+        new_message_id_chain = message_id_chain.dup << message_id
+        correlation_id = new_message_id_chain.first
 
         hd = Blinkbox::CommonMessaging::HeaderDetectors.new(data)
 
@@ -315,7 +315,7 @@ module Blinkbox
           timestamp: Time.now.to_i,
           headers: hd.modified_headers({
             "content-type" => data.content_type,
-            "message_id_chain" => message_id_chain
+            "message_id_chain" => new_message_id_chain
           }.merge(headers))
         )
 
