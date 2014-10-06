@@ -299,7 +299,7 @@ module Blinkbox
         raise ArgumentError, "All published messages must be validated. Please see Blinkbox::CommonMessaging.init_from_schema_at for details." unless data.class.included_modules.include?(JsonSchemaPowered)
 
         message_id = generate_message_id
-        message_id_chain = (message_id_chain || []) << message_id
+        message_id_chain = (message_id_chain.dup rescue []) << message_id
         correlation_id = message_id_chain.first
 
         hd = Blinkbox::CommonMessaging::HeaderDetectors.new(data)
