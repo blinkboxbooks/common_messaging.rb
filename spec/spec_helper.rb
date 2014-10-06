@@ -27,6 +27,9 @@ RSpec.configure do |config|
           defaultField: {
             type: "string",
             default: "default value"
+          },
+          whateverHash: {
+            type: "object"
           }
         },
         additionalProperties: false,

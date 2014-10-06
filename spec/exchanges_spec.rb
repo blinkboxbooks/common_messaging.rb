@@ -189,5 +189,29 @@ context Blinkbox::CommonMessaging::Exchange do
         )
       )
     end
+
+    it "must add the `has_remote_uris` header for messages which have remote URIs" do
+      hash = {
+        "whateverHash" => {
+          "uris" => [
+            {
+              "type" => "remote",
+              "uri" => "http://elsewhe.re"
+            }
+          ]
+        }
+      }
+      object = @klass.new(@valid_object.merge(hash))
+      @exchange.publish(object)
+      expect(@real_exchange).to have_received(:publish).with(
+        anything,
+        hash_including(
+          headers: hash_including(
+            "has_remote_uris" => true,
+            "remote_uris" => ["whateverHash.uris[0]"]
+          )
+        )
+      )
+    end
   end
 end

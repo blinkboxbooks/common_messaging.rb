@@ -1,12 +1,10 @@
 # -*- encoding: utf-8 -*-
+$LOAD_PATH.unshift(File.join(__dir__, "lib"))
+require "blinkbox/common_messaging/version"
 
 Gem::Specification.new do |gem|
   gem.name          = "blinkbox-common_messaging"
-  gem.version       = begin
-    File.read("VERSION")
-  rescue Errno::ENOENT
-    "0.0.0"
-  end
+  gem.version       = Blinkbox::CommonMessaging::VERSION
   gem.authors       = ["JP Hastings-Spital"]
   gem.email         = ["jphastings@blinkbox.com"]
   gem.description   = %q{Simple helper for messaging around blinkbox Books}
