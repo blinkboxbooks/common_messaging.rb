@@ -1,15 +1,19 @@
 class Blinkbox::CommonMessaging::HeaderDetectors
-  METHODS = []
+  @@header_detectors = []
 
   def initialize(obj)
     @obj = obj
   end
 
   def modified_headers(original_headers = {})
-    METHODS.each do |m|
+    @@header_detectors.each do |m|
       original_headers = send(m, original_headers)
     end
     original_headers
+  end
+
+  def self.register(method_name)
+    @@header_detectors << method_name
   end
 end
 

@@ -295,11 +295,12 @@ module Blinkbox
       # @param [Array<String>] message_id_chain Optional. The message_id_chain of the message which was received in order to prompt this one.
       # @param [Boolean] confirm Will block this method until the MQ server has confirmed the message has been persisted and routed.
       # @return [String] The correlation_id of the message which was delivered.
-      def publish(data, headers: {}, message_id_chain: nil, confirm: true)
+      def publish(data, headers: {}, message_id_chain: [], confirm: true)
         raise ArgumentError, "All published messages must be validated. Please see Blinkbox::CommonMessaging.init_from_schema_at for details." unless data.class.included_modules.include?(JsonSchemaPowered)
+        raise ArgumentError, "message_id_chain must be an array of strings" unless message_id_chain.is_a?(Array)
 
         message_id = generate_message_id
-        message_id_chain = (message_id_chain.dup rescue []) << message_id
+        message_id_chain = message_id_chain.dup << message_id
         correlation_id = message_id_chain.first
 
         hd = Blinkbox::CommonMessaging::HeaderDetectors.new(data)

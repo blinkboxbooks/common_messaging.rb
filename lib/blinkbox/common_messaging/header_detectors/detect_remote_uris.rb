@@ -13,7 +13,7 @@ class Blinkbox::CommonMessaging::HeaderDetectors
     original_headers
   end
 
-  METHODS << :detect_remote_uris
+  register :detect_remote_uris
 end
 
 module ExtraHashMethods
