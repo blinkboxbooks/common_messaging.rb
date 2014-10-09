@@ -9,6 +9,7 @@ context Blinkbox::CommonMessaging::Queue do
 
       allow(@doubles[:connection]).to receive(:queue).and_return(@doubles[:queue])
       allow(@doubles[:connection]).to receive(:headers).and_return(@doubles[:exchange])
+      allow(@doubles[:connection]).to receive(:prefetch)
       allow(@doubles[:queue]).to receive(:bind)
 
       allow(Bunny).to receive(:new).and_return(
