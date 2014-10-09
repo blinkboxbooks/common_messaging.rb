@@ -1,5 +1,13 @@
 # Change log
 
+## 0.3.0 ([#3](https://git.mobcastdev.com/Platform/common_messaging.rb/pull/3) 2014-10-09 10:46:10)
+
+Prefetch
+
+### New feature
+
+- Add prefetch capability
+
 ## 0.2.0 ([#2](https://git.mobcastdev.com/Platform/common_messaging.rb/pull/2) 2014-10-03 13:30:51)
 
 Remote uris
