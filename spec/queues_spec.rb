@@ -27,7 +27,6 @@ context Blinkbox::CommonMessaging::Queue do
         durable: true,
         auto_delete: false,
         exclusive: false,
-        passive: true,
         arguments: {
           "x-dead-letter-exchange" => anything
         }
