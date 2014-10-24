@@ -31,7 +31,6 @@ module Blinkbox
           durable: true,
           auto_delete: false,
           exclusive: false,
-          passive: true,
           arguments: {
             "x-dead-letter-exchange" => dlx
           }
