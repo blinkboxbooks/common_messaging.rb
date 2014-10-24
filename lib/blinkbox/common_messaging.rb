@@ -137,6 +137,223 @@ module Blinkbox
       end
     end
 
+    # A proxy class for generating queues and binding them to exchanges using Bunny. In the
+    # format expected from blinkbox Books services.
+    class Queue
+      extend Forwardable
+      def_delegators :@queue, :status
+
+      # Create a queue object for subscribing to messages with.
+      #
+      # NB. There is no way to know what bindings have already been made for a queue, so all code
+      # subscribing to a queue should cope with receiving messages it's not expecting.
+      #
+      # @param [String] queue_name The name of the queue which should be used and (if necessary) created.
+      # @param [String] exchange The name of the Exchange to bind to. The default value should be avoided for production uses.
+      # @param [String] dlx The name of the Dead Letter Exchange to send nacked messages to.
+      # @param [Array,Hash] bindings An array of hashes, each on detailing the parameters for a new binding.
+      # @param [Integer] prefetch The number of messages to collect at a time when subscribing.
+      # @raise [Bunny::NotFound] If the exchange does not exist.
+      # @return [Bunny::Queue] A blinkbox managed Bunny Queue object
+      def initialize(queue_name, exchange: "amq.headers", dlx: "#{exchange}.DLX", bindings: [], prefetch: 10)
+        raise ArgumentError, "Prefetch must be a positive integer" unless prefetch.is_a?(Integer) && prefetch > 0
+        connection = CommonMessaging.connection
+        @logger = CommonMessaging.config[:logger]
+        # We create one channel per queue because it means that any issues are isolated
+        # and we can start a new channel and resume efforts in a segregated manner.
+        @channel = connection.create_channel
+        @channel.prefetch(prefetch)
+        @queue = @channel.queue(
+          queue_name,
+          durable: true,
+          auto_delete: false,
+          exclusive: false,
+          arguments: {
+            "x-dead-letter-exchange" => dlx
+          }
+        )
+        @exchange = @channel.headers(
+          exchange,
+          durable: true,
+          auto_delete: false,
+          passive: true
+        )
+        Kernel.warn "No bindings were given, the queue is unlikely to receive any messages" if bindings.empty?
+        bindings.each do |binding|
+          @queue.bind(@exchange, arguments: binding)
+        end
+      end
+
+      # Defines a new block for handling exceptions which occur when processing an incoming message. Cases where this might occur include:
+      #
+      # * A message which doesn't have a recognised content-type (ie. one which has been 'init'ed)
+      # * An invalid JSON message
+      # * A valid JSON message which doesn't pass schema validation
+      #
+      # @example Sending excepted messages to a log, then nack them
+      #   log = Logger.new(STDOUT)
+      #   queue = Blinkbox::CommonMessaging::Queue.new("My.Queue")
+      #   queue.on_exception do |e, delivery_info, metadata, payload|
+      #     log.error e
+      #     channel.reject(delivery_info[:delivery_tag], false)
+      #   end
+      #
+      # @yield [exception, channel, delivery)info, metadata, payload] Yields for each exception which occurs.
+      # @yieldparam [Exception] exception The exception which was raised.
+      # @yieldparam [Bunny::Connection] exception The channel this exchnage is using (useful for nacking).
+      # @yieldparam [Hash] delivery_info The RabbitMQ delivery info for the message (useful for nacking).
+      # @yieldparam [Hash] metadata The metadata delivered from the RabbitMQ server (parameters and headers).
+      # @yieldparam [String] payload The message that was received
+      def on_exception(&block)
+        raise ArgumentError, "Please specify a block to call when an exception is raised" unless block_given?
+        @on_exception = block
+      end
+
+      # Emits the metadata and objectified payload for every message which appears on the queue. Any message with a content-type
+      # not 'init'ed will be rejected (without retry) automatically.
+      #
+      # * Returning `true` or `:ack` from the block will acknowledge and remove the message from the queue
+      # * Returning `false` or `:reject` from the block will send the message to the DLQ
+      # * Returning `:retry` will put the message back on the queue to be tried again later.
+      #
+      # @example Subscribing to messages
+      #   queue = Blinkbox::CommonMessaging::Queue.new("catch-all", exchange_name: "Marvin", [{}])
+      #   queue.subscribe(block:true) do |metadata, obj|
+      #     puts "Messge received."
+      #     puts "Headers: #{metadata[:headers].to_json}"
+      #     puts "Body: #{obj.to_json}"
+      #   end
+      #
+      # @param [Boolean] :block Should this method block while being executed (true, default) or spawn a new thread? (false)
+      # @param [Array<Blinkbox::CommonMessaging::JsonSchemaPowered>, nil] :accept List of schema types to accept (any not on the list will be rejected). `nil` will accept all message types and not validate incoming messages.
+      # @yield [metadata, payload_object] A block to execute for each message which is received on this queue.
+      # @yieldparam metadata [Hash] The properties and headers (in [:headers]) delivered with the message.
+      # @yieldparam payload_object [Blinkbox::CommonMessaging::JsonSchemaPowered] An object representing the validated JSON payload.
+      # @yieldreturn [Boolean, :ack, :reject, :retry]
+      def subscribe(block: true, accept: nil)
+        raise ArgumentError, "Please give a block to run when a message is received" unless block_given?
+        @queue.subscribe(
+          block: block,
+          manual_ack: true
+        ) do |delivery_info, metadata, payload|
+          begin
+            if accept.nil?
+              object = payload
+            else
+              klass = Blinkbox::CommonMessaging.class_from_content_type(metadata[:headers]['content-type'])
+              if accept.include?(klass)
+                object = klass.new(JSON.parse(payload)) 
+              else
+                response = :reject 
+              end
+            end
+            response ||= yield(metadata, object)
+            case response
+            when :ack, true
+              @channel.ack(delivery_info[:delivery_tag])
+            when :reject, false
+              @channel.reject(delivery_info[:delivery_tag], false)
+            when :retry
+              @channel.reject(delivery_info[:delivery_tag], true)
+            else
+              fail "Unknown response from subscribe block: #{response}"
+            end
+          rescue Exception => e
+            (@on_exception || method(:default_on_exception)).call(e, @channel, delivery_info, metadata, payload)
+          end
+        end
+      end
+
+      private
+
+      # The default handler for exceptions which occur when processing a message.
+      def default_on_exception(exception, channel, delivery_info, metadata, payload)
+        @logger.error exception
+        channel.reject(delivery_info[:delivery_tag], false)
+      end
+    end
+
+    class Exchange
+      extend Forwardable
+      def_delegators :@exchange, :on_return
+
+      # A wrapped class for Bunny::Exchange. Wrapped so we can take care of message validation and header 
+      # conventions in the blinkbox Books format.
+      #
+      # @param [String] exchange_name The name of the Exchange to connect to.
+      # @param [String] facility The name of the app or service (we've adopted the GELF naming term across ruby)
+      # @param [String] facility_version The version of the app or service which sent the message.
+      # @raise [Bunny::NotFound] If the exchange does not exist.
+      def initialize(exchange_name, facility: File.basename($0, '.rb'), facility_version: "0.0.0-unknown")
+        @app_id = "#{facility}:v#{facility_version}"
+        connection = CommonMessaging.connection
+        channel = connection.create_channel
+        channel.confirm_select
+        @exchange = channel.headers(
+          exchange_name,
+          durable: true,
+          auto_delete: false,
+          passive: true
+        )
+      end
+
+      # Publishes a message to the exchange with blinkbox Books default message headers and properties.
+      #
+      # Worth noting that because of a quirk of the RabbitMQ Headers Exchange you cannot route on properties
+      # so, in order to facilitate routing on content-type, that key is written to the headers by default as
+      # well as to the properties.
+      #
+      # @param [Blinkbox::CommonMessaging::JsonSchemaPowered, String] data The information which will be sent as the payload of the message. An instance of any class generated by Blinkbox::CommonMessaging.init_from_schema_at while :validate is true, or a String if false.
+      # @param [Hash] headers A hash of string keys and string values which will be sent as headers with the message. Used for matching.
+      # @param [Array<String>] message_id_chain Optional. The message_id_chain of the message which was received in order to prompt this one.
+      # @param [Boolean] confirm Will block this method until the MQ server has confirmed the message has been persisted and routed.
+      # @param [Boolean] validate if false will relax the constraint that the inbound data must be a JsonSchemaPowered object.
+      # @return [String] The correlation_id of the message which was delivered.
+      def publish(data, headers: {}, message_id_chain: [], confirm: true, validate: true)
+        raise ArgumentError, "All published messages must be validated. Please see Blinkbox::CommonMessaging.init_from_schema_at for details." if validate && !data.class.included_modules.include?(JsonSchemaPowered)
+        raise ArgumentError, "message_id_chain must be an array of strings" unless message_id_chain.is_a?(Array)
+
+        message_id = generate_message_id
+        new_message_id_chain = message_id_chain.dup << message_id
+        correlation_id = new_message_id_chain.first
+
+        headers = headers.merge!("message_id_chain" => new_message_id_chain)
+        options = {}
+
+        if data.respond_to?(:content_type)
+          hd = Blinkbox::CommonMessaging::HeaderDetectors.new(data)
+          headers = hd.modified_headers(headers)
+          # We have to do both of these because of RabbitMQ's weird header exchange protocol
+          headers["content-type"] = data.content_type 
+          options[:content_type] = data.content_type
+          data = data.to_json
+        end
+
+        options.merge!(
+          persistent: true,
+          correlation_id: correlation_id,
+          message_id: message_id,
+          app_id: @app_id,
+          timestamp: Time.now.to_i,
+          headers: headers
+        )
+        @exchange.publish(data, options)
+
+        if confirm && !@exchange.channel.wait_for_confirms
+          message_id = @exchange.channel.nacked_set.first
+          raise UndeliverableMessageError, "Message #{message_id} was returned as undeliverable by RabbitMQ."
+        end
+
+        message_id
+      end
+
+      private
+
+      def generate_message_id
+        SecureRandom.hex(8) # 8 generates a 16 byte string
+      end
+    end
+
     module JsonSchemaPowered
       extend Forwardable
       def_delegators :@data, :responds_to?, :to_json, :[]
