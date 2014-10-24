@@ -1,5 +1,13 @@
 # Change log
 
+## 0.4.0 ([#4](https://git.mobcastdev.com/Platform/common_messaging.rb/pull/4) 2014-10-24 10:11:02)
+
+Validation of messages
+
+### New feature
+
+- Payloads can be validated or not, allowing 'catch all' queues.
+
 ## 0.3.0 ([#3](https://git.mobcastdev.com/Platform/common_messaging.rb/pull/3) 2014-10-09 10:46:10)
 
 Prefetch
