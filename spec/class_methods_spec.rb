@@ -55,7 +55,7 @@ context Blinkbox::CommonMessaging do
         }
         instance = @klass.new(data)
 
-        expect(instance[:requiredField]).to eq(data[:requiredField])
+        expect(instance['requiredField']).to eq(data[:requiredField])
       end
 
       it "must add default values" do
@@ -64,7 +64,7 @@ context Blinkbox::CommonMessaging do
         }
         instance = @klass.new(data)
 
-        expect(instance[:defaultField]).to eq("default value")
+        expect(instance['defaultField']).to eq("default value")
       end
 
       it "must have the correct content_type" do
