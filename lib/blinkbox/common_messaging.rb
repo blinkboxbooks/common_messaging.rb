@@ -153,6 +153,13 @@ module Blinkbox
         @data.to_json
       end
 
+      def ==(other)
+        self.to_hash == other.to_hash
+      rescue
+        # Any errors would be because the other isn't a hash, so the answer must be false
+        false
+      end
+
       def inspect
         classification_string = @data["classification"].map do |cl| 
           "#{cl["realm"]}:#{cl["id"]}"
