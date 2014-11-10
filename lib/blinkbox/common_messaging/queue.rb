@@ -127,6 +127,14 @@ module Blinkbox
         end
       end
 
+      # Purges all messages from this queue. Destroys data!
+      #
+      # @return [true] Returns true if the purge occurred correctly (or a RabbitMQ error if it couldn't)
+      def purge!
+        @queue.purge
+        true
+      end
+
       private
 
       # The default handler for exceptions which occur when processing a message.
