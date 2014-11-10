@@ -1,5 +1,13 @@
 # Change log
 
+## 0.4.1 ([#5](https://git.mobcastdev.com/Platform/common_messaging.rb/pull/5) 2014-11-06 16:31:05)
+
+Refactor
+
+### Improvements
+
+- Just shift code between two files. No code alterations whatsoever.
+
 ## 0.4.0 ([#4](https://git.mobcastdev.com/Platform/common_messaging.rb/pull/4) 2014-10-24 10:11:02)
 
 Validation of messages
