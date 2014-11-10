@@ -1,5 +1,13 @@
 # Change log
 
+## 0.5.0 ([#7](https://git.mobcastdev.com/Platform/common_messaging.rb/pull/7) 2014-11-10 13:05:42)
+
+Temporary queues
+
+### New feature
+
+- Added support for temporary and exclusive queues. Needed for `common_mapping`.
+
 ## 0.4.1 ([#5](https://git.mobcastdev.com/Platform/common_messaging.rb/pull/5) 2014-11-06 16:31:05)
 
 Refactor
