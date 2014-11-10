@@ -1,3 +1,5 @@
+require "securerandom"
+
 module Blinkbox
   module CommonMessaging
     # A proxy class for generating queues and binding them to exchanges using Bunny. In the
@@ -13,12 +15,12 @@ module Blinkbox
       #
       # @param [String] queue_name The name of the queue which should be used and (if necessary) created.
       # @param [String] exchange The name of the Exchange to bind to. The default value should be avoided for production uses.
-      # @param [String] dlx The name of the Dead Letter Exchange to send nacked messages to.
+      # @param [String, nil] dlx The name of the Dead Letter Exchange to send nacked messages to.
       # @param [Array,Hash] bindings An array of hashes, each on detailing the parameters for a new binding.
       # @param [Integer] prefetch The number of messages to collect at a time when subscribing.
       # @raise [Bunny::NotFound] If the exchange does not exist.
       # @return [Bunny::Queue] A blinkbox managed Bunny Queue object
-      def initialize(queue_name, exchange: "amq.headers", dlx: "#{exchange}.DLX", bindings: [], prefetch: 10)
+      def initialize(queue_name, exchange: "amq.headers", dlx: "#{exchange}.DLX", bindings: [], prefetch: 10, exclusive: false, temporary: false)
         raise ArgumentError, "Prefetch must be a positive integer" unless prefetch.is_a?(Integer) && prefetch > 0
         connection = CommonMessaging.connection
         @logger = CommonMessaging.config[:logger]
@@ -26,14 +28,14 @@ module Blinkbox
         # and we can start a new channel and resume efforts in a segregated manner.
         @channel = connection.create_channel
         @channel.prefetch(prefetch)
+        args = {}
+        args["x-dead-letter-exchange"] = dlx unless dlx.nil?
         @queue = @channel.queue(
           queue_name,
-          durable: true,
-          auto_delete: false,
-          exclusive: false,
-          arguments: {
-            "x-dead-letter-exchange" => dlx
-          }
+          durable: !temporary,
+          auto_delete: temporary,
+          exclusive: exclusive,
+          arguments: args
         )
         @exchange = @channel.headers(
           exchange,
