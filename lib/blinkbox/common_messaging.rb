@@ -205,7 +205,8 @@ module Blinkbox
         include JsonSchemaPowered
 
         def initialize(data = {})
-          @data = data.stringify_keys
+          @data = data
+          @data = @data.stringify_keys if data.respond_to?(:stringify_keys)
           JSON::Validator.validate!(self.class.const_get("SCHEMA_FILE"), @data, insert_defaults: true)
         end
 
