@@ -1,5 +1,13 @@
 # Change log
 
+## 0.5.1 ([#8](https://git.mobcastdev.com/Platform/common_messaging.rb/pull/8) 2014-11-25 17:44:39)
+
+Only stringify if it can be stringified
+
+### Bug fix
+
+- Mapping Updates are arrays, not objects, which fail when sent into the initialiser.
+
 ## 0.5.0 ([#7](https://git.mobcastdev.com/Platform/common_messaging.rb/pull/7) 2014-11-10 13:05:42)
 
 Temporary queues
