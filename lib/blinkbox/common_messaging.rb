@@ -105,6 +105,7 @@ module Blinkbox
         raise ArgumentError, "The logger did not respond to '#{m}'" unless logger.respond_to?(m)
       end
       @@config[:logger] = logger
+      @@config[:bunny][:logger] = logger
     end
 
     # Returns (and starts if necessary) the connection to the RabbitMQ server as specified by the current
