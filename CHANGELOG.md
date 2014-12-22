@@ -1,5 +1,13 @@
 # Change log
 
+## 0.5.2 ([#9](https://git.mobcastdev.com/Platform/common_messaging.rb/pull/9) 2014-12-22 15:03:21)
+
+Ensure Bunny logging to Graylog
+
+### Improvement
+
+- Ensure the logger is set for bunny at the low level. [Bunny Docs](http://rubybunny.info/articles/connecting.html)
+
 ## 0.5.1 ([#8](https://git.mobcastdev.com/Platform/common_messaging.rb/pull/8) 2014-11-25 17:44:39)
 
 Only stringify if it can be stringified
