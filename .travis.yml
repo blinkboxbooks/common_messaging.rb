@@ -5,9 +5,9 @@ rvm:
 deploy:
   provider: rubygems
   api_key:
-    secure: JZ75Bc6uZQTDNvpQHJiZ+AvmY8JgFjbMpfNzAAktxByd+kk/8dvRspMesWWRH1pCewyReBpPEMFih7FoJBUMAIIHYOG9Ixe8VRC8tvXqIOIabSovUmnd78f1JP5A9fv3CmFLmi1hctd6qi515z0WF93QrmU12Z/99m7PMaukics=
+    secure: RUvlR3yDjIyKtP8Q80dpnFZ2muxsOPt9kVRG6mx7IpavQ3qQkH/2Kl+Hwo/5YoodQACPhfxMludsW2WsXMoSomVQrIjNA7nK3mkBNJxTM+vFMXBLuyJ9GbpaK9lZzG1sHTyakCcw3ieWh27GYjHKvJuc6KjexmUicReXdrGNmqY=
   gem: blinkbox-common_messaging
   on:
-    repo: blinkboxbooks/common_messaging
+    repo: blinkboxbooks/common_messaging.rb
     rvm: 2.1.2
     branch: master
