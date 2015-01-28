@@ -1,5 +1,9 @@
 # Change log
 
+## Open Source release (2015-01-28 14:11:21)
+
+Today we have decided to publish parts of our codebase on Github under the [MIT licence](LICENCE). The licence is very permissive, but we will always appreciate hearing if and where our work is used!
+
 ## 0.5.2 ([#9](https://git.mobcastdev.com/Platform/common_messaging.rb/pull/9) 2014-12-22 15:03:21)
 
 Ensure Bunny logging to Graylog
