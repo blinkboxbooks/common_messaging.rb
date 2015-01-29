@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-$LOAD_PATH.unshift(File.join(__dir__, "lib"))
+$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), "lib"))
 require "blinkbox/common_messaging/version"
 
 Gem::Specification.new do |gem|
